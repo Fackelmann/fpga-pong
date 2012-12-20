@@ -1,0 +1,21 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity parity is
+  port(
+    data   : in    std_logic_vector(7 downto 0);
+    parity  : out    std_logic
+    );
+end parity;
+
+architecture RTL of parity is
+
+begin  -- RTL
+
+  parity_checker: process (data)
+  begin  -- process parity_checker
+    parity<= (data(0) xor data(1)) xor (data(2) xor data(3)) xor (data(4) xor data(5)) xor (data(6) xor data(7));
+  end process parity_checker;
+
+end RTL;

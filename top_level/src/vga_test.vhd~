@@ -1,0 +1,116 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity vga_test is
+  port(
+    CLOCK_50: in std_logic;
+    KEY : in std_logic_vector(3 downto 0);
+	 SW: in std_logic_vector(17 downto 0);
+	 LEDR: out std_logic_vector(17 downto 0);
+	 LEDG: out std_logic_vector(8 downto 0);
+    VGA_R:out std_logic_vector(7 downto 0);
+    VGA_G:out std_logic_vector(7 downto 0);
+    VGA_B:out std_logic_vector(7 downto 0);
+    VGA_HS:out std_logic;
+    VGA_VS:out std_logic;
+    VGA_CLK: buffer std_logic;
+    VGA_BLANK_N: out std_logic;
+    VGA_SYNC_N: out std_logic
+    );
+end vga_test;
+
+architecture RTL of vga_test is
+
+  component vgaController
+    generic(
+      -- Lines
+      VSTs: integer:=521;
+      VSTd: integer:= 480;
+      VSTpw: integer:=2;
+      VSTfp: integer:=10;
+      VSTbp: integer:=29;
+      -- Clock cycles
+      HSTs: integer:=800;
+      HSTd: integer:= 640;
+      HSTpw: integer:=96;
+      HSTfp: integer:=16;
+      HSTbp: integer:=48
+      );
+    port(
+      clkin50: in std_logic;
+      reset: in std_logic;
+      clk25: out std_logic;
+      hsync: out std_logic;
+      vsync: out std_logic;
+      bright: out std_logic;
+      hcount: buffer std_logic_vector(9 downto 0);  -- 640
+      vcount: buffer std_logic_vector(8 downto 0)  -- 480
+      );
+  end component;
+
+  signal clkin50:  std_logic:='0';
+  signal    reset:  std_logic;
+  signal    hsync:  std_logic;
+  signal    vsync:  std_logic;
+  signal    bright:  std_logic;
+  signal    hcount:  std_logic_vector(9 downto 0);  -- 640
+  signal    vcount:  std_logic_vector(8 downto 0);  -- 480
+
+begin  -- RTL
+
+	reset<=KEY(0);
+	LEDG<=(others=>'0');
+	LEDR<=(others=>'0');
+	
+  DUT: vgaController
+    port map(
+      clkin50=>CLOCK_50,
+      reset=>reset,
+      clk25=>VGA_CLK,
+      hsync=>VGA_HS,
+      vsync=>VGA_VS,
+      bright=>bright,
+      hcount=>hcount,
+      vcount=>vcount
+      );
+
+  VGA_SYNC_N<='0';
+  VGA_BLANK_N<='1';
+
+  generator: process (VGA_CLK, reset)
+  begin  -- process generator
+    if reset = '0' then                 -- asynchronous reset (active low)
+      VGA_R<=(others=>'0');
+      VGA_G<=(others=>'0');
+      VGA_B<=(others=>'0');
+    elsif VGA_CLK'event and VGA_CLK = '1' then  -- rising clock edge
+      if bright='1' then
+		  VGA_B<=(others=>'0');
+		  VGA_G<=(others=>'0');
+        VGA_R<=(others=>'0');
+		  if SW(0)='1' then
+		  if unsigned(vcount)<160 then
+				VGA_R<=(others=>'1');
+		  elsif unsigned(vcount)<320 then
+			   VGA_B<=(others=>'1');
+		  else
+			   VGA_G<=(others=>'1');
+				end if;
+			else	
+		  if unsigned(hcount)<213 then
+				VGA_R<=(others=>'1');
+		  elsif unsigned(hcount)<426 then
+			   VGA_B<=(others=>'1');
+		  else
+			   VGA_G<=(others=>'1');
+				end if;	
+	end if;			
+      else
+		  VGA_B<=(others=>'0');
+		  VGA_G<=(others=>'0');
+        VGA_R<=(others=>'0');
+      end if;
+    end if;
+  end process generator;
+end RTL;

@@ -1,0 +1,89 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity pong_kb_dec is
+  port(
+    clkIn : in     std_logic;
+    reset: in std_logic;
+    keyCode: in std_logic_vector (7 downto 0);
+    keyValid: in std_logic;
+    playerOne: out std_logic_vector(1 downto 0);  -- 00 idle 01 up 10 down
+    playerTwo: out std_logic_vector(1 downto 0)  -- 00 idle 01 up 10 down
+    );
+end pong_kb_dec;
+
+architecture RTL of pong_kb_dec is
+
+  type StateType is (IDLEONE,IDLETWO,PRSSONE,PRSSTWO,RELONE,RELTWO);
+  signal StateOne,StateTwo : StateType;
+  signal NextStateOne,NextStateTwo : StateType;
+
+  signal combPlayerOne : std_logic_vector(1 downto 0);
+
+begin  -- RTL
+
+  FSMONE: process (clkIn, reset)
+  begin  -- process FSMONE
+    if reset = '0' then                 -- asynchronous reset (active low)
+      playerOne<=(others=>'0');
+    elsif clkIn'event and clkIn = '1' then  -- rising clock edge
+      StateOne<=NextStateOne;
+    end if;
+  end process FSMONE;
+
+  FSMTWO: process (clkIn, reset)
+  begin  -- process FSMTWO
+    if reset = '0' then                 -- asynchronous reset (active low)
+      playerTwo<=(others=>'0');
+    elsif clkIn'event and clkIn = '1' then  -- rising clock edge
+      StateTwo<=NextStateTwo;
+    end if;
+  end process FSMTWO;
+
+  STATESONE: process (StateOne,keyValid,keyCode)
+  begin  -- process STATESONE
+    NextStateOne<=StateOne;
+    combPlayerOne<="11";                -- mantain by default
+    if keyValid='1' then                   -- We need a valid key press
+      case StateOne is
+        when IDLEONE =>
+          NextStateOne<=PRSSONE;
+          if  keyCode=x"15" then
+            combPlayerOne<="01";            --up
+          elsif keyCode=x"1C" then
+            combPlayerOne<="10";            --down
+          else
+            combPlayerOne<="00";        --idle
+            NextStateOne<=IDLEONE;
+          end if;
+        when PRSSONE =>
+          if keyCode=x"F0" then
+            NextStateOne<=RELONE;
+          end if;
+        when RELONE =>
+          if (keyCode=x"15") or (keyCode=x"1C") then
+            NextStateOne<=IDLEONE;
+          else
+            NextStateOne<=PRSSONE;
+          end if;
+        when others => null;
+      end case;
+    end if;
+  end process STATESONE;
+
+  process (clkIn, reset)
+  begin  -- process
+    if reset = '0' then                 -- asynchronous reset (active low)
+      playerOne<="00";
+    elsif clkIn'event and clkIn = '1' then  -- rising clock edge
+      if combPlayerOne="10" then
+        playerOne<="10";
+      elsif combPlayerOne="01" then
+        playerOne<="01";
+      elsif combPlayerOne="00" then
+        playerOne<="00";
+      end if;
+    end if;
+  end process;
+end RTL;
