@@ -48,18 +48,20 @@ begin  -- RTL
           VGA_R <= (others => '1');
           VGA_G <= (others => '1');
           VGA_B <= (others => '1');
+        elsif (unsigned(hcount) > (620)) and (unsigned(hcount) < 640) and ((unsigned(vcount) > (unsigned(playerTwoPos) - to_unsigned(PADDLE_HEIGHT, 8))) and (unsigned(vcount) < (unsigned(playerTwoPos) + to_unsigned(PADDLE_HEIGHT, 8)))) then
+          VGA_R <= (others => '1');
+          VGA_G <= (others => '1');
+          VGA_B <= (others => '1');
+			elsif (unsigned(hcount) > 319) and (unsigned(hcount) < 321) then
+          VGA_R <= (others => '1');
+          VGA_G <= (others => '1');
+          VGA_B <= (others => '1');
         else
           VGA_R <= (others => '0');
           VGA_G <= (others => '0');
           VGA_B <= (others => '0');
         end if;
-		  
-		  -- Divisory line
-		  if (unsigned(hcount)>319) and (unsigned(hcount)<321) then
-          VGA_R <= (others => '1');
-          VGA_G <= (others => '1');
-          VGA_B <= (others => '1');
-		end if;		 
+
       else
         VGA_R <= (others => '0');
         VGA_G <= (others => '0');
@@ -72,7 +74,7 @@ begin  -- RTL
   begin  -- process update_position
     if reset = '0' then                     -- asynchronous reset (active low)
       playerOnePos <= std_logic_vector(to_unsigned(240, 9));
-      playerTwoPos <= (others => '0');
+      playerTwoPos <= std_logic_vector(to_unsigned(240, 9));
       counter      <= (others => '0');
     elsif clkIn'event and clkIn = '1' then  -- rising clock edge
       if counter < 130000 then
@@ -86,6 +88,16 @@ begin  -- RTL
         elsif playerOne = "10" then
           if (unsigned(playerOnePos) < (480 - PADDLE_HEIGHT)) then
             playerOnePos <= std_logic_vector(unsigned(playerOnePos)+1);
+          end if;
+        end if;
+
+        if playerTwo = "01" then
+          if (unsigned(playerTwoPos) > PADDLE_HEIGHT) then
+            playerTwoPos <= std_logic_vector(unsigned(playerTwoPos)-1);
+          end if;
+        elsif playerTwo = "10" then
+          if (unsigned(playerTwoPos) < (480 - PADDLE_HEIGHT)) then
+            playerTwoPos <= std_logic_vector(unsigned(playerTwoPos)+1);
           end if;
         end if;
       end if;
