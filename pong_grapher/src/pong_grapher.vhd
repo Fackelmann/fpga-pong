@@ -53,6 +53,13 @@ begin  -- RTL
           VGA_G <= (others => '0');
           VGA_B <= (others => '0');
         end if;
+		  
+		  -- Divisory line
+		  if (unsigned(hcount)>319) and (unsigned(hcount)<321) then
+          VGA_R <= (others => '1');
+          VGA_G <= (others => '1');
+          VGA_B <= (others => '1');
+		end if;		 
       else
         VGA_R <= (others => '0');
         VGA_G <= (others => '0');
