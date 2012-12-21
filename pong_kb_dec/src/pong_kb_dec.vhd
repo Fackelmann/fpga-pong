@@ -20,18 +20,11 @@ architecture RTL of pong_kb_dec is
   signal NextStateOne, NextStateTwo : StateType;
 
   signal combPlayerOne : std_logic_vector(1 downto 0);
+  signal combPlayerTwo : std_logic_vector(1 downto 0);
   signal prevValid     : std_logic;
 
 begin  -- RTL
 
-  FSMTWO : process (clkIn, reset)
-  begin  -- process FSMTWO
-    if reset = '0' then                     -- asynchronous reset (active low)
-      playerTwo <= (others => '0');
-    elsif clkIn'event and clkIn = '1' then  -- rising clock edge
-      StateTwo <= NextStateTwo;
-    end if;
-  end process FSMTWO;
 
   STATESONE : process (StateOne, keyValid, prevValid, keyCode)
   begin  -- process STATESONE
@@ -65,20 +58,64 @@ begin  -- RTL
     end if;
   end process STATESONE;
 
+
+  STATESTWO : process (StateTwo, keyValid, prevValid, keyCode)
+  begin  -- process STATESTWO
+    NextStateTwo  <= StateTwo;
+    combPlayerTwo <= "11";                      -- mantain by default
+    if keyValid = '1' and prevValid = '0' then  -- We need a valid key press
+      case StateTwo is
+        when IDLETWO =>
+          NextStateTwo <= PRSSTWO;
+          if keyCode = x"44" then
+            combPlayerTwo <= "01";              --up
+          elsif keyCode = x"4B" then
+            combPlayerTwo <= "10";              --down
+          else
+            combPlayerTwo <= "00";              --idle
+            NextStateTwo  <= IDLETWO;
+          end if;
+        when PRSSTWO =>
+          if keyCode = x"F0" then
+            NextStateTwo <= RELTWO;
+          end if;
+        when RELTWO =>
+          if (keyCode = x"44") or (keyCode = x"4B") then
+            combPlayerTwo <= "00";              --idle
+            NextStateTwo  <= IDLETWO;
+          else
+            NextStateTwo <= PRSSTWO;
+          end if;
+        when others => null;
+      end case;
+    end if;
+  end process STATESTWO;
+
   process (clkIn, reset)
   begin  -- process
     if reset = '0' then                     -- asynchronous reset (active low)
       playerOne <= "00";
+      playerTwo <= "00";
       prevValid <= '0';
+      StateOne  <= IDLEONE;
+      StateTwo  <= IDLETWO;
     elsif clkIn'event and clkIn = '1' then  -- rising clock edge
       prevValid <= keyValid;
       StateOne  <= NextStateOne;
+      StateTwo  <= NextStateTwo;
       if combPlayerOne = "10" then
         playerOne <= "10";
       elsif combPlayerOne = "01" then
         playerOne <= "01";
       elsif combPlayerOne = "00" then
         playerOne <= "00";
+      end if;
+      if combPlayerTwo = "10" then
+        playerTwo <= "10";
+      elsif combPlayerTwo = "01" then
+        playerTwo <= "01";
+      elsif combPlayerTwo = "00" then
+        playerTwo <= "00";
       end if;
     end if;
   end process;
